@@ -293,8 +293,8 @@ export function Dashboard() {
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-2">
-                          <div className="flex items-center justify-between">
-                            <Badge variant="secondary">
+                          <div className="flex items-start justify-between">
+                            <Badge variant="secondary" className="self-start">
                               {project.medium || 'AI Project'}
                             </Badge>
                             <span className="text-xs text-gray-500">
@@ -358,13 +358,14 @@ export function Dashboard() {
                         <CardDescription>{video.description}</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-start justify-between">
                           <Badge 
                             variant={
                               video.status === 'READY' ? 'default' : 
                               video.status === 'TRANSCRIBING' ? 'secondary' :
                               video.status === 'ERROR' ? 'destructive' : 'secondary'
                             }
+                            className="self-start"
                           >
                             {video.status}
                           </Badge>

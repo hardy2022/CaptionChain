@@ -23,7 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${nunito.className} min-h-screen bg-gradient-to-br from-purple-300 via-blue-300 to-indigo-300`}>
+      <body className={`${nunito.className} min-h-screen bg-gradient-to-br from-green-300 via-indigo-300 to-purple-300`}>
         <AnimatedBackground />
         <AuthProvider>
           {children}
