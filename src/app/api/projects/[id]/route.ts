@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -13,9 +13,10 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { id } = await params
     const project = await prisma.project.findFirst({
       where: {
-        id: params.id,
+        id: id,
         userId: session.user.id
       },
       include: {
@@ -46,6 +47,8 @@ export async function GET(
       id: project.id,
       name: project.name,
       description: project.description,
+      script: project.script,
+      medium: project.medium,
       createdAt: project.createdAt,
       updatedAt: project.updatedAt,
       videos: project.videos
@@ -61,7 +64,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -69,16 +72,38 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { id } = await params
     const body = await request.json()
-    const { name, description } = body
+    const { name, description, script } = body
 
+    // Allow updating script without requiring name
+    if (script !== undefined) {
+      const project = await prisma.project.updateMany({
+        where: {
+          id: id,
+          userId: session.user.id
+        },
+        data: {
+          script: script?.trim() || null,
+          updatedAt: new Date()
+        }
+      })
+
+      if (project.count === 0) {
+        return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+      }
+
+      return NextResponse.json({ success: true })
+    }
+
+    // Handle name/description updates
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json({ error: 'Project name is required' }, { status: 400 })
     }
 
     const project = await prisma.project.updateMany({
       where: {
-        id: params.id,
+        id: id,
         userId: session.user.id
       },
       data: {
@@ -104,7 +129,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -112,9 +137,10 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const { id } = await params
     const project = await prisma.project.deleteMany({
       where: {
-        id: params.id,
+        id: id,
         userId: session.user.id
       }
     })

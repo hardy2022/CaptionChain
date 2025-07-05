@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, description } = body
+    const { name, description, script, medium } = body
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json({ error: 'Project name is required' }, { status: 400 })
@@ -56,6 +56,8 @@ export async function POST(request: NextRequest) {
       data: {
         name: name.trim(),
         description: description?.trim() || null,
+        script: script?.trim() || null,
+        medium: medium || null,
         userId: session.user.id
       },
       include: {

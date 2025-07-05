@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Video, Plus, Upload, Settings, LogOut, User, FolderOpen, Clock, FileVideo } from "lucide-react"
+import { Video, Plus, Upload, Settings, LogOut, User, FolderOpen, Clock, FileVideo, Sparkles } from "lucide-react"
 import { useAppStore } from "@/lib/store"
 import { VideoUpload } from "@/components/video-upload"
 import { ProjectForm } from "@/components/project-form"
@@ -143,7 +143,7 @@ export function Dashboard() {
               Welcome back, {session?.user?.name?.split(" ")[0] || "User"}!
             </h1>
             <p className="text-gray-600 dark:text-gray-400">
-              Ready to create amazing videos with AI-powered captions?
+              Transform your scripts into AI-generated content across multiple mediums
             </p>
           </div>
 
@@ -164,26 +164,26 @@ export function Dashboard() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Videos Processed</CardTitle>
+                <CardTitle className="text-sm font-medium">AI Content Generated</CardTitle>
                 <FileVideo className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{videos.length}</div>
                 <p className="text-xs text-muted-foreground">
-                  +5 from last week
+                  Pieces of AI content
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Processing Time</CardTitle>
+                <CardTitle className="text-sm font-medium">AI Generation Time</CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">~2.5min</div>
+                <div className="text-2xl font-bold">~30s</div>
                 <p className="text-xs text-muted-foreground">
-                  Average per video
+                  Average per piece
                 </p>
               </CardContent>
             </Card>
@@ -196,17 +196,45 @@ export function Dashboard() {
                 <Card className="cursor-pointer hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Upload className="h-5 w-5" />
-                      Upload New Video
+                      <Sparkles className="h-5 w-5 text-purple-500" />
+                      Generate AI Content
                     </CardTitle>
                     <CardDescription>
-                      Upload a video to start generating captions
+                      Create AI-generated content from your scripts
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <Button className="w-full">
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Start AI Generation
+                    </Button>
+                  </CardContent>
+                </Card>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create AI-Generated Project</DialogTitle>
+                </DialogHeader>
+                <ProjectForm />
+              </DialogContent>
+            </Dialog>
+
+            <Dialog>
+              <DialogTrigger asChild>
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Upload className="h-5 w-5" />
+                      Upload Existing Video
+                    </CardTitle>
+                    <CardDescription>
+                      Upload and process existing video content
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button variant="outline" className="w-full">
                       <Upload className="mr-2 h-4 w-4" />
-                      Choose Video File
+                      Upload Video
                     </Button>
                   </CardContent>
                 </Card>
@@ -216,34 +244,6 @@ export function Dashboard() {
                   <DialogTitle>Upload Video</DialogTitle>
                 </DialogHeader>
                 <VideoUpload />
-              </DialogContent>
-            </Dialog>
-
-            <Dialog>
-              <DialogTrigger asChild>
-                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Plus className="h-5 w-5" />
-                      Create New Project
-                    </CardTitle>
-                    <CardDescription>
-                      Start a new video project from scratch
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button variant="outline" className="w-full">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create Project
-                    </Button>
-                  </CardContent>
-                </Card>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Project</DialogTitle>
-                </DialogHeader>
-                <ProjectForm />
               </DialogContent>
             </Dialog>
           </div>
@@ -292,13 +292,20 @@ export function Dashboard() {
                         <CardDescription>{project.description}</CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="flex items-center justify-between">
-                          <Badge variant="secondary">
-                            {project.videos?.length || 0} videos
-                          </Badge>
-                          <span className="text-xs text-gray-500">
-                            {new Date(project.updatedAt).toLocaleDateString()}
-                          </span>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <Badge variant="secondary">
+                              {project.medium || 'AI Project'}
+                            </Badge>
+                            <span className="text-xs text-gray-500">
+                              {new Date(project.updatedAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                          {project.script && (
+                            <p className="text-xs text-gray-600 line-clamp-2">
+                              "{project.script.substring(0, 100)}..."
+                            </p>
+                          )}
                         </div>
                       </CardContent>
                     </Card>

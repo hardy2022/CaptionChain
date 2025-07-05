@@ -12,6 +12,8 @@ interface Project {
   id: string
   name: string
   description?: string
+  script?: string
+  medium?: string
   createdAt: Date
   updatedAt: Date
   videos?: Video[]

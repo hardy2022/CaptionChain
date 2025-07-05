@@ -19,6 +19,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No video file provided' }, { status: 400 })
     }
 
+    if (!projectId) {
+      return NextResponse.json({ error: 'No projectId provided' }, { status: 400 })
+    }
+
     // Validate file type
     if (!videoFile.type.startsWith('video/')) {
       return NextResponse.json({ error: 'Invalid file type' }, { status: 400 })
@@ -50,13 +54,11 @@ export async function POST(request: NextRequest) {
         size: videoFile.size,
         format: fileExtension || 'unknown',
         status: 'UPLOADING',
-        projectId: projectId || null,
-        project: projectId ? {
+        project: {
           connect: {
-            id: projectId,
-            userId: session.user.id // Ensure user owns the project
+            id: projectId
           }
-        } : undefined
+        }
       }
     })
 
