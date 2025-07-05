@@ -2,23 +2,49 @@
 
 import { useSession, signOut } from "next-auth/react"
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Video, Plus, Upload, Settings, LogOut, User, FolderOpen, Clock, FileVideo } from "lucide-react"
 import { useAppStore } from "@/lib/store"
+import { VideoUpload } from "@/components/video-upload"
+import { ProjectForm } from "@/components/project-form"
 
 export function Dashboard() {
   const { data: session } = useSession()
+  const router = useRouter()
   const { projects, videos, setProjects, setVideos } = useAppStore()
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    // TODO: Fetch user's projects and videos from API
-    setIsLoading(false)
-  }, [])
+    const fetchData = async () => {
+      try {
+        // Fetch projects
+        const projectsResponse = await fetch('/api/projects')
+        if (projectsResponse.ok) {
+          const projectsData = await projectsResponse.json()
+          setProjects(projectsData)
+        }
+
+        // Fetch videos
+        const videosResponse = await fetch('/api/videos')
+        if (videosResponse.ok) {
+          const videosData = await videosResponse.json()
+          setVideos(videosData)
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [setProjects, setVideos])
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/" })
@@ -50,10 +76,20 @@ export function Dashboard() {
             </div>
 
             <div className="flex items-center space-x-4">
-              <Button variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                New Project
-              </Button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    New Project
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create New Project</DialogTitle>
+                  </DialogHeader>
+                  <ProjectForm />
+                </DialogContent>
+              </Dialog>
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -155,41 +191,61 @@ export function Dashboard() {
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Upload className="h-5 w-5" />
-                  Upload New Video
-                </CardTitle>
-                <CardDescription>
-                  Upload a video to start generating captions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button className="w-full">
-                  <Upload className="mr-2 h-4 w-4" />
-                  Choose Video File
-                </Button>
-              </CardContent>
-            </Card>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Upload className="h-5 w-5" />
+                      Upload New Video
+                    </CardTitle>
+                    <CardDescription>
+                      Upload a video to start generating captions
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button className="w-full">
+                      <Upload className="mr-2 h-4 w-4" />
+                      Choose Video File
+                    </Button>
+                  </CardContent>
+                </Card>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Upload Video</DialogTitle>
+                </DialogHeader>
+                <VideoUpload />
+              </DialogContent>
+            </Dialog>
 
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Plus className="h-5 w-5" />
-                  Create New Project
-                </CardTitle>
-                <CardDescription>
-                  Start a new video project from scratch
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Project
-                </Button>
-              </CardContent>
-            </Card>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Plus className="h-5 w-5" />
+                      Create New Project
+                    </CardTitle>
+                    <CardDescription>
+                      Start a new video project from scratch
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button variant="outline" className="w-full">
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create Project
+                    </Button>
+                  </CardContent>
+                </Card>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New Project</DialogTitle>
+                </DialogHeader>
+                <ProjectForm />
+              </DialogContent>
+            </Dialog>
           </div>
 
           {/* Recent Projects */}
@@ -207,33 +263,47 @@ export function Dashboard() {
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
                     Create your first project to get started
                   </p>
-                  <Button>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Project
-                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Project
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Create New Project</DialogTitle>
+                      </DialogHeader>
+                      <ProjectForm />
+                    </DialogContent>
+                  </Dialog>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {projects.slice(0, 6).map((project) => (
-                  <Card key={project.id} className="cursor-pointer hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <CardTitle className="text-base">{project.name}</CardTitle>
-                      <CardDescription>{project.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        <Badge variant="secondary">
-                          {project.videos?.length || 0} videos
-                        </Badge>
-                        <span className="text-xs text-gray-500">
-                          {new Date(project.updatedAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {projects.slice(0, 6).map((project) => (
+                    <Card 
+                      key={project.id} 
+                      className="cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => router.push(`/projects/${project.id}`)}
+                    >
+                      <CardHeader>
+                        <CardTitle className="text-base">{project.name}</CardTitle>
+                        <CardDescription>{project.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between">
+                          <Badge variant="secondary">
+                            {project.videos?.length || 0} videos
+                          </Badge>
+                          <span className="text-xs text-gray-500">
+                            {new Date(project.updatedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
             )}
           </div>
 
@@ -252,33 +322,53 @@ export function Dashboard() {
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
                     Upload your first video to start generating captions
                   </p>
-                  <Button>
-                    <Upload className="mr-2 h-4 w-4" />
-                    Upload Video
-                  </Button>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload Video
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>Upload Video</DialogTitle>
+                      </DialogHeader>
+                      <VideoUpload />
+                    </DialogContent>
+                  </Dialog>
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {videos.slice(0, 6).map((video) => (
-                  <Card key={video.id} className="cursor-pointer hover:shadow-lg transition-shadow">
-                    <CardHeader>
-                      <CardTitle className="text-base">{video.title}</CardTitle>
-                      <CardDescription>{video.description}</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        <Badge variant={video.status === 'READY' ? 'default' : 'secondary'}>
-                          {video.status}
-                        </Badge>
-                        <span className="text-xs text-gray-500">
-                          {video.duration ? `${Math.round(video.duration)}s` : 'Unknown'}
-                        </span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {videos.slice(0, 6).map((video) => (
+                    <Card 
+                      key={video.id} 
+                      className="cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={() => router.push(`/videos/${video.id}`)}
+                    >
+                      <CardHeader>
+                        <CardTitle className="text-base">{video.title}</CardTitle>
+                        <CardDescription>{video.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between">
+                          <Badge 
+                            variant={
+                              video.status === 'READY' ? 'default' : 
+                              video.status === 'TRANSCRIBING' ? 'secondary' :
+                              video.status === 'ERROR' ? 'destructive' : 'secondary'
+                            }
+                          >
+                            {video.status}
+                          </Badge>
+                          <span className="text-xs text-gray-500">
+                            {video.duration ? `${Math.round(video.duration)}s` : 'Unknown'}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
             )}
           </div>
         </div>
