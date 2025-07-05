@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Nunito } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/providers/auth-provider";
 import { Toaster } from "sonner";
+import { AnimatedBackground } from "@/components/animated-background";
 
-const inter = Inter({ subsets: ["latin"] });
+const nunito = Nunito({ 
+  subsets: ["latin"],
+  weight: ["200", "300", "400", "500", "600", "700", "800", "900"],
+  variable: "--font-nunito"
+});
 
 export const metadata: Metadata = {
   title: "CaptionChain - AI Video Generation Platform",
@@ -18,7 +23,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${nunito.className} min-h-screen bg-gradient-to-br from-purple-300 via-blue-300 to-indigo-300`}>
+        <AnimatedBackground />
         <AuthProvider>
           {children}
           <Toaster />
