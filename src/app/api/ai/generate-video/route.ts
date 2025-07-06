@@ -68,16 +68,8 @@ export async function POST(request: NextRequest) {
         originalUrl: '', // Will be populated after generation
         processedUrl: '',
         status: 'PROCESSING' as const,
-        user: {
-          connect: {
-            id: session.user.id
-          }
-        },
-        project: {
-          connect: {
-            id: projectId
-          }
-        }
+        userId: session.user.id,
+        projectId: projectId
       }
     })
 
