@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
@@ -24,6 +25,7 @@ interface GenerationStep {
 }
 
 export function ScriptToVideoGenerator({ projectId, onVideoGenerated }: ScriptToVideoGeneratorProps) {
+  const { data: session } = useSession()
   const [script, setScript] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
   const [generationSteps, setGenerationSteps] = useState<GenerationStep[]>([
@@ -58,6 +60,11 @@ export function ScriptToVideoGenerator({ projectId, onVideoGenerated }: ScriptTo
   ])
 
   const handleGenerateVideo = async () => {
+    if (!session?.user) {
+      toast.error("Please log in to use video generation")
+      return
+    }
+    
     if (!script.trim()) {
       toast.error("Please enter a script to generate video")
       return
@@ -66,6 +73,9 @@ export function ScriptToVideoGenerator({ projectId, onVideoGenerated }: ScriptTo
     setIsGenerating(true)
     
     try {
+      console.log('Starting video generation for project:', projectId)
+      console.log('Script length:', script.length)
+      
       // Start the generation process
       const response = await fetch('/api/ai/generate-video', {
         method: 'POST',
@@ -78,8 +88,18 @@ export function ScriptToVideoGenerator({ projectId, onVideoGenerated }: ScriptTo
         }),
       })
 
+      console.log('Response status:', response.status)
+      console.log('Response ok:', response.ok)
+      
       if (!response.ok) {
-        throw new Error('Failed to start video generation')
+        const errorText = await response.text()
+        console.error('Response error:', errorText)
+        
+        if (response.status === 401) {
+          throw new Error('Please log in to use video generation')
+        } else {
+          throw new Error(`Failed to start video generation: ${response.status} ${errorText}`)
+        }
       }
 
       const { videoId } = await response.json()
@@ -191,7 +211,7 @@ export function ScriptToVideoGenerator({ projectId, onVideoGenerated }: ScriptTo
           
           <Button 
             onClick={handleGenerateVideo}
-            disabled={isGenerating || !script.trim()}
+            disabled={isGenerating || !script.trim() || !session?.user}
             className="w-full"
             size="lg"
           >
@@ -199,6 +219,11 @@ export function ScriptToVideoGenerator({ projectId, onVideoGenerated }: ScriptTo
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 Generating Video...
+              </>
+            ) : !session?.user ? (
+              <>
+                <Sparkles className="mr-2 h-4 w-4" />
+                Please Log In to Generate Video
               </>
             ) : (
               <>

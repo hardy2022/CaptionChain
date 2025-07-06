@@ -5,31 +5,61 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Video generation API called')
+    
     const session = await getServerSession(authOptions)
+    console.log('Session data:', {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      userId: session?.user?.id,
+      userEmail: session?.user?.email
+    })
+    
     if (!session?.user?.id) {
+      console.log('Unauthorized access attempt')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const body = await request.json()
     const { projectId, script } = body
 
+    console.log('Request body:', { projectId, scriptLength: script?.length })
+
     if (!projectId || !script) {
+      console.log('Missing required fields')
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
     // Verify project belongs to user
+    console.log('Verifying project ownership...')
+    console.log('Looking for project:', projectId, 'for user:', session.user.id)
+    
     const project = await prisma.project.findFirst({
       where: {
         id: projectId,
         userId: session.user.id
       }
     })
+    
+    console.log('Project query result:', project ? 'Found' : 'Not found')
 
     if (!project) {
+      console.log('Project not found or unauthorized')
       return NextResponse.json({ error: 'Project not found' }, { status: 404 })
     }
 
+    console.log('Project verified:', project.id)
+
     // Create a video record to track the generation
+    console.log('Creating video record...')
+    console.log('Video data:', {
+      title: `AI Generated Video from Script`,
+      description: `Generated from script: "${script.substring(0, 100)}..."`,
+      filename: `ai_video_${Date.now()}.mp4`,
+      userId: session.user.id,
+      projectId: projectId
+    })
+    
     const video = await prisma.video.create({
       data: {
         title: `AI Generated Video from Script`,
@@ -37,7 +67,7 @@ export async function POST(request: NextRequest) {
         filename: `ai_video_${Date.now()}.mp4`,
         originalUrl: '', // Will be populated after generation
         processedUrl: '',
-        status: 'PROCESSING',
+        status: 'PROCESSING' as const,
         user: {
           connect: {
             id: session.user.id
@@ -51,13 +81,19 @@ export async function POST(request: NextRequest) {
       }
     })
 
+    console.log('Video record created:', video.id)
+
     // Start the AI video generation process
     // This would integrate with actual AI services like:
     // - OpenAI for script analysis
     // - Pexels/Unsplash APIs for media search
     // - FFmpeg for video composition
-    startVideoGeneration(video.id, script)
+    // Fire and forget - don't await to avoid blocking the response
+    startVideoGeneration(video.id, script).catch(error => {
+      console.error('Background video generation error:', error)
+    })
 
+    console.log('Returning success response')
     return NextResponse.json({
       videoId: video.id,
       status: 'PROCESSING',
@@ -66,8 +102,10 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Video generation error:', error)
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
+    console.error('Error message:', error instanceof Error ? error.message : 'No message')
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
@@ -93,7 +131,7 @@ async function startVideoGeneration(videoId: string, script: string) {
     await prisma.video.update({
       where: { id: videoId },
       data: {
-        status: 'READY',
+        status: 'READY' as const,
         originalUrl: videoUrl,
         processedUrl: videoUrl,
         duration: calculateTotalDuration(segments)
@@ -108,7 +146,7 @@ async function startVideoGeneration(videoId: string, script: string) {
     // Update video status to ERROR
     await prisma.video.update({
       where: { id: videoId },
-      data: { status: 'ERROR' }
+      data: { status: 'ERROR' as const }
     })
   }
 }
