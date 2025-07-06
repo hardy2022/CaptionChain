@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { 
   Play, Pause, Volume2, VolumeX, Maximize, 
   Scissors, Copy, Trash2, Plus, ArrowLeft, Save,
-  Clock, Film, Image, Music
+  Clock, Film, Image, Music, Search
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -49,41 +49,11 @@ export function VideoEditor({ video, onSave, onClose }: VideoEditorProps) {
   const [duration, setDuration] = useState(0)
   const [isMuted, setIsMuted] = useState(false)
   const [selectedSegment, setSelectedSegment] = useState<string | null>(null)
-  const [segments, setSegments] = useState<VideoSegment[]>([
-    {
-      id: '1',
-      type: 'video',
-      title: 'Opening Scene',
-      description: 'Beautiful sunset over ocean waves',
-      url: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-      startTime: 0,
-      endTime: 5,
-      duration: 5,
-      thumbnail: 'https://via.placeholder.com/120x68/3b82f6/ffffff?text=Scene+1'
-    },
-    {
-      id: '2',
-      type: 'image',
-      title: 'Mountain Landscape',
-      description: 'Panoramic mountain view',
-      url: 'https://via.placeholder.com/1280x720/10b981/ffffff?text=Mountain+Scene',
-      startTime: 5,
-      endTime: 8,
-      duration: 3,
-      thumbnail: 'https://via.placeholder.com/120x68/10b981/ffffff?text=Scene+2'
-    },
-    {
-      id: '3',
-      type: 'video',
-      title: 'City Skyline',
-      description: 'Urban cityscape at night',
-      url: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
-      startTime: 8,
-      endTime: 12,
-      duration: 4,
-      thumbnail: 'https://via.placeholder.com/120x68/f59e0b/ffffff?text=Scene+3'
-    }
-  ])
+  const [segments, setSegments] = useState<VideoSegment[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [showMediaSearch, setShowMediaSearch] = useState(false)
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const timelineRef = useRef<HTMLDivElement>(null)
@@ -93,6 +63,11 @@ export function VideoEditor({ video, onSave, onClose }: VideoEditorProps) {
       setDuration(videoRef.current.duration || 0)
     }
   }, [])
+
+  // Debug: Log segments changes
+  useEffect(() => {
+    console.log('Segments updated:', segments)
+  }, [segments])
 
   const handlePlayPause = () => {
     if (videoRef.current) {
@@ -152,6 +127,70 @@ export function VideoEditor({ video, onSave, onClose }: VideoEditorProps) {
 
   const getProgressPercentage = () => {
     return duration > 0 ? (currentTime / duration) * 100 : 0
+  }
+
+  const searchMedia = async () => {
+    if (!searchQuery.trim()) return
+    
+    console.log('Searching for:', searchQuery)
+    setIsSearching(true)
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 second timeout
+      
+      const response = await fetch(`/api/media/pexels?query=${encodeURIComponent(searchQuery)}&type=video&per_page=10`, {
+        signal: controller.signal
+      })
+      
+      clearTimeout(timeoutId)
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      
+      const data = await response.json()
+      console.log('Search results:', data)
+      setSearchResults(data.items || [])
+      setShowMediaSearch(true)
+      toast.success(`Found ${data.items?.length || 0} media items`)
+    } catch (error) {
+      console.error('Error searching media:', error)
+      if (error instanceof Error && error.name === 'AbortError') {
+        toast.error('Search timed out. Please try again.')
+      } else {
+        toast.error('Failed to search media. Please try again.')
+      }
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  const addMediaSegment = (mediaItem: any) => {
+    console.log('Adding media segment:', mediaItem)
+    
+    const newSegment: VideoSegment = {
+      id: Date.now().toString(),
+      type: mediaItem.type || 'video',
+      title: mediaItem.title || 'Untitled Media',
+      description: mediaItem.description || 'Media from search',
+      url: mediaItem.url,
+      startTime: segments.length > 0 ? segments[segments.length - 1].endTime : 0,
+      endTime: segments.length > 0 ? segments[segments.length - 1].endTime + (mediaItem.duration || 5) : (mediaItem.duration || 5),
+      duration: mediaItem.duration || 5,
+      thumbnail: mediaItem.thumbnail || 'https://via.placeholder.com/120x68/6b7280/ffffff?text=Media'
+    }
+    
+    console.log('Created new segment:', newSegment)
+    setSegments(prevSegments => {
+      const updatedSegments = [...prevSegments, newSegment]
+      console.log('Updated segments:', updatedSegments)
+      return updatedSegments
+    })
+    
+    setSelectedSegment(newSegment.id)
+    setShowMediaSearch(false)
+    setSearchQuery('')
+    toast.success('Media added to timeline')
   }
 
   const addSegment = () => {
@@ -316,10 +355,45 @@ export function VideoEditor({ video, onSave, onClose }: VideoEditorProps) {
             <div className="p-4">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">Timeline</h3>
-                <Button onClick={addSegment} size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Segment
-                </Button>
+                <div className="flex gap-2">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="Search for videos..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="px-3 py-1 border rounded-md text-sm"
+                      onKeyPress={(e) => e.key === 'Enter' && searchMedia()}
+                    />
+                    <Button onClick={searchMedia} disabled={isSearching || !searchQuery.trim()} size="sm">
+                      {isSearching ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                      ) : (
+                        <Search className="h-3 w-3" />
+                      )}
+                    </Button>
+                  </div>
+                  <Button onClick={addSegment} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Segment
+                  </Button>
+                  <Button 
+                    onClick={() => addMediaSegment({
+                      id: 'test-1',
+                      type: 'video',
+                      title: 'Test Ocean Video',
+                      description: 'Test video for debugging',
+                      url: 'https://videos.pexels.com/video-files/1918465/1918465-uhd_3840_2160_24fps.mp4',
+                      thumbnail: 'https://images.pexels.com/videos/1918465/pictures/preview-0.jpg',
+                      duration: 15
+                    })} 
+                    size="sm"
+                    variant="outline"
+                    className="text-xs"
+                  >
+                    Test Add
+                  </Button>
+                </div>
               </div>
 
               <div 
@@ -327,7 +401,16 @@ export function VideoEditor({ video, onSave, onClose }: VideoEditorProps) {
                 className="flex gap-2 overflow-x-auto pb-4"
                 style={{ scrollbarWidth: 'thin' }}
               >
-                {segments.map((segment) => (
+                {segments.length === 0 ? (
+                  <div className="flex items-center justify-center w-full h-32 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
+                    <div className="text-center">
+                      <Film className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+                      <p className="text-sm">No segments in timeline</p>
+                      <p className="text-xs">Search for media above or add a new segment</p>
+                    </div>
+                  </div>
+                ) : (
+                  segments.map((segment) => (
                   <div
                     key={segment.id}
                     className={`flex-shrink-0 w-48 border-2 rounded-lg cursor-pointer transition-all ${
@@ -386,7 +469,52 @@ export function VideoEditor({ video, onSave, onClose }: VideoEditorProps) {
                       </div>
                     </div>
                   </div>
-                ))}
+                ))
+                )}
+
+                {/* Media Search Results */}
+                {showMediaSearch && searchResults.length > 0 && (
+                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium text-blue-800">Search Results ({searchResults.length} found)</h4>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => setShowMediaSearch(false)}
+                        className="text-blue-600 hover:text-blue-800"
+                      >
+                        ×
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-48 overflow-y-auto">
+                      {searchResults.map((item) => (
+                        <div
+                          key={item.id}
+                          className="cursor-pointer hover:opacity-75 transition-opacity bg-white rounded-lg p-2 border border-blue-200"
+                          onClick={() => addMediaSegment(item)}
+                        >
+                          <img
+                            src={item.thumbnail}
+                            alt={item.title}
+                            className="w-full h-20 object-cover rounded mb-2"
+                            onError={(e) => {
+                              e.currentTarget.src = 'https://via.placeholder.com/120x68/6b7280/ffffff?text=No+Image'
+                            }}
+                          />
+                          <p className="text-xs font-medium truncate text-gray-800">{item.title}</p>
+                          <p className="text-xs text-gray-500">{item.duration}s • {item.type}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Debug Info */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mt-2 text-xs text-gray-500">
+                    Debug: {segments.length} segments in timeline
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { pexelsAPI } from '@/lib/pexels'
 
 export async function POST(request: NextRequest) {
   try {
@@ -233,36 +234,134 @@ async function searchMediaForSegments(segments: ScriptSegment[]): Promise<MediaC
 }
 
 async function searchMediaAPI(query: string): Promise<any[]> {
-  // This would be a real API call to Pexels, Unsplash, etc.
-  // For now, return mock data
+  try {
+    console.log(`Searching Pexels for: ${query}`)
+    
+    // Check if API key is configured
+    if (!process.env.PEXELS_API_KEY) {
+      console.log('Pexels API key not configured, using fallback content')
+      return getFallbackMedia(query)
+    }
+    
+    // Search for videos first
+    const videoResponse = await pexelsAPI.searchVideos(query, 1, 5)
+    const videos = videoResponse.videos?.map(video => ({
+      url: pexelsAPI.getBestVideoFile(video),
+      type: 'video',
+      duration: video.duration,
+      thumbnail: pexelsAPI.getThumbnail(video),
+      title: `Video by ${video.user.name}`,
+      width: video.width,
+      height: video.height
+    })) || []
+
+    // If no videos found, search for images
+    if (videos.length === 0) {
+      const imageResponse = await pexelsAPI.searchImages(query, 1, 5)
+      const images = imageResponse.photos?.map(photo => ({
+        url: photo.src.large2x,
+        type: 'image',
+        duration: 5, // Default duration for images
+        thumbnail: photo.src.medium,
+        title: photo.alt || `Photo by ${photo.photographer}`,
+        width: photo.width,
+        height: photo.height
+      })) || []
+      
+      return images
+    }
+
+    return videos
+  } catch (error) {
+    console.error('Error searching Pexels:', error)
+    console.log('Using fallback content due to API error')
+    return getFallbackMedia(query)
+  }
+}
+
+function getFallbackMedia(query: string): any[] {
+  // Provide different fallback content based on query
+  const lowerQuery = query.toLowerCase()
+  
+  if (lowerQuery.includes('sunset') || lowerQuery.includes('ocean')) {
+    return [
+      {
+        url: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
+        type: 'video',
+        duration: 10,
+        thumbnail: 'https://via.placeholder.com/320x180/ff6b35/ffffff?text=Sunset+Scene',
+        title: 'Beautiful Sunset Scene',
+        width: 1280,
+        height: 720
+      }
+    ]
+  }
+  
+  if (lowerQuery.includes('mountain') || lowerQuery.includes('landscape')) {
+    return [
+      {
+        url: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
+        type: 'video',
+        duration: 8,
+        thumbnail: 'https://via.placeholder.com/320x180/10b981/ffffff?text=Mountain+Scene',
+        title: 'Mountain Landscape',
+        width: 1280,
+        height: 720
+      }
+    ]
+  }
+  
+  if (lowerQuery.includes('city') || lowerQuery.includes('urban')) {
+    return [
+      {
+        url: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
+        type: 'video',
+        duration: 12,
+        thumbnail: 'https://via.placeholder.com/320x180/3b82f6/ffffff?text=City+Scene',
+        title: 'City Skyline',
+        width: 1280,
+        height: 720
+      }
+    ]
+  }
+  
+  // Default fallback
   return [
     {
-      url: `https://example.com/media/${encodeURIComponent(query)}.mp4`,
+      url: 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4',
       type: 'video',
-      duration: 10
+      duration: 10,
+      thumbnail: 'https://via.placeholder.com/320x180/6b7280/ffffff?text=Sample+Video',
+      title: 'Sample Video Content',
+      width: 1280,
+      height: 720
     }
   ]
 }
 
 async function composeVideo(segments: ScriptSegment[], mediaClips: MediaClip[]): Promise<string> {
   // This would integrate with FFmpeg or similar video processing library
-  // For now, return a demo video URL for testing
+  // For now, return the first media clip URL as the "composed" video
   
   const videoId = `generated_${Date.now()}`
   
-  // Use a sample video for demonstration
-  const videoUrl = 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4'
+  console.log(`Composing video with ${segments.length} segments and ${mediaClips.length} clips`)
   
   // In production, this would:
-  // 1. Download media clips
+  // 1. Download media clips from URLs
   // 2. Process them with FFmpeg
   // 3. Add transitions between clips
   // 4. Synchronize with script timing
-  // 5. Upload to cloud storage
+  // 5. Upload to cloud storage (AWS S3, Google Cloud Storage, etc.)
   
-  console.log(`Composing video with ${segments.length} segments and ${mediaClips.length} clips`)
+  // For now, return the first available media clip
+  if (mediaClips.length > 0) {
+    console.log(`Using media clip: ${mediaClips[0].url}`)
+    return mediaClips[0].url
+  }
   
-  return videoUrl
+  // Fallback to sample video
+  return 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4'
 }
 
 function calculateTotalDuration(segments: ScriptSegment[]): number {
