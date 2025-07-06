@@ -9,29 +9,54 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Video, Plus, Upload, Settings, LogOut, User, FolderOpen, Clock, FileVideo, Sparkles, Zap } from "lucide-react"
+import { Video, Plus, Upload, Settings, LogOut, User, FolderOpen, Clock, FileVideo, Sparkles, Zap, Trash2, MoreVertical } from "lucide-react"
 import { useAppStore } from "@/lib/store"
 import { VideoUpload } from "@/components/video-upload"
 import { ProjectForm } from "@/components/project-form"
+import { toast } from "sonner"
+
+interface Project {
+  id: string
+  name: string
+  description: string
+  medium: string
+  script: string
+  createdAt: string
+  updatedAt: string
+  videos: any[]
+}
+
+interface Video {
+  id: string
+  title: string
+  description: string
+  status: string
+  duration: number
+  createdAt: string
+  updatedAt: string
+}
 
 export function Dashboard() {
   const { data: session } = useSession()
   const router = useRouter()
   const { projects, videos, setProjects, setVideos } = useAppStore()
   const [isLoading, setIsLoading] = useState(true)
+  const [isDeletingProject, setIsDeletingProject] = useState<string | null>(null)
+  const [isDeletingVideo, setIsDeletingVideo] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch projects
-        const projectsResponse = await fetch('/api/projects')
+        const [projectsResponse, videosResponse] = await Promise.all([
+          fetch('/api/projects'),
+          fetch('/api/videos')
+        ])
+
         if (projectsResponse.ok) {
           const projectsData = await projectsResponse.json()
           setProjects(projectsData)
         }
 
-        // Fetch videos
-        const videosResponse = await fetch('/api/videos')
         if (videosResponse.ok) {
           const videosData = await videosResponse.json()
           setVideos(videosData)
@@ -47,7 +72,49 @@ export function Dashboard() {
   }, [setProjects, setVideos])
 
   const handleSignOut = () => {
-    signOut({ callbackUrl: "/" })
+    signOut({ callbackUrl: '/' })
+  }
+
+  const handleDeleteProject = async (projectId: string) => {
+    setIsDeletingProject(projectId)
+    try {
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        setProjects(projects.filter(p => p.id !== projectId))
+        toast.success('Project deleted successfully')
+      } else {
+        toast.error('Failed to delete project')
+      }
+    } catch (error) {
+      console.error('Error deleting project:', error)
+      toast.error('Failed to delete project')
+    } finally {
+      setIsDeletingProject(null)
+    }
+  }
+
+  const handleDeleteVideo = async (videoId: string) => {
+    setIsDeletingVideo(videoId)
+    try {
+      const response = await fetch(`/api/videos/${videoId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        setVideos(videos.filter(v => v.id !== videoId))
+        toast.success('Video deleted successfully')
+      } else {
+        toast.error('Failed to delete video')
+      }
+    } catch (error) {
+      console.error('Error deleting video:', error)
+      toast.error('Failed to delete video')
+    } finally {
+      setIsDeletingVideo(null)
+    }
   }
 
   if (isLoading) {
@@ -293,13 +360,48 @@ export function Dashboard() {
                 </CardContent>
               </Card>
             ) : (
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {projects.slice(0, 6).map((project) => (
-                    <Card 
-                      key={project.id} 
-                      className="cursor-pointer hover:shadow-lg transition-shadow"
-                      onClick={() => router.push(`/projects/${project.id}`)}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {projects.slice(0, 6).map((project) => (
+                  <Card 
+                    key={project.id} 
+                    className="relative group cursor-pointer hover:shadow-lg transition-shadow"
+                  >
+                    <div 
+                      className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      onClick={(e) => e.stopPropagation()}
                     >
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => router.push(`/projects/${project.id}`)}>
+                            Open Project
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteProject(project.id)}
+                            className="text-red-600 focus:text-red-600"
+                            disabled={isDeletingProject === project.id}
+                          >
+                            {isDeletingProject === project.id ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2"></div>
+                                Deleting...
+                              </>
+                            ) : (
+                              <>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Project
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div onClick={() => router.push(`/projects/${project.id}`)}>
                       <CardHeader>
                         <CardTitle className="text-base">{project.name}</CardTitle>
                         <CardDescription>{project.description}</CardDescription>
@@ -321,9 +423,10 @@ export function Dashboard() {
                           )}
                         </div>
                       </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
             )}
           </div>
 
@@ -359,13 +462,48 @@ export function Dashboard() {
                 </CardContent>
               </Card>
             ) : (
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {videos.slice(0, 6).map((video) => (
-                    <Card 
-                      key={video.id} 
-                      className="cursor-pointer hover:shadow-lg transition-shadow"
-                      onClick={() => router.push(`/videos/${video.id}`)}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {videos.slice(0, 6).map((video) => (
+                  <Card 
+                    key={video.id} 
+                    className="relative group cursor-pointer hover:shadow-lg transition-shadow"
+                  >
+                    <div 
+                      className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                      onClick={(e) => e.stopPropagation()}
                     >
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => router.push(`/videos/${video.id}`)}>
+                            Open Video
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteVideo(video.id)}
+                            className="text-red-600 focus:text-red-600"
+                            disabled={isDeletingVideo === video.id}
+                          >
+                            {isDeletingVideo === video.id ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2"></div>
+                                Deleting...
+                              </>
+                            ) : (
+                              <>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Video
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div onClick={() => router.push(`/videos/${video.id}`)}>
                       <CardHeader>
                         <CardTitle className="text-base">{video.title}</CardTitle>
                         <CardDescription>{video.description}</CardDescription>
@@ -387,9 +525,10 @@ export function Dashboard() {
                           </span>
                         </div>
                       </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
             )}
           </div>
         </div>

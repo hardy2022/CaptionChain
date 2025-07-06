@@ -10,13 +10,13 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-white/80 backdrop-blur-lg text-gray-800 border border-white/70 shadow-xl hover:bg-white/90 hover:border-white/80 transition-all font-semibold",
+          "bg-white/80 backdrop-blur-lg text-gray-800 border border-indigo-300/60 hover:bg-white/90 hover:border-indigo-400/70 transition-all font-semibold",
         destructive:
-          "bg-red-500/20 backdrop-blur-lg text-red-900 border border-red-300/40 shadow-xl hover:bg-red-500/30 hover:border-red-300/50 transition-all font-semibold",
+          "bg-red-500/20 backdrop-blur-lg text-red-900 border border-red-300/40 hover:bg-red-500/30 hover:border-red-300/50 transition-all font-semibold",
         outline:
-          "bg-white/80 backdrop-blur-lg text-gray-800 border border-white/70 shadow-xl hover:bg-white/90 hover:border-white/80 transition-all font-semibold",
+          "bg-white/80 backdrop-blur-lg text-gray-800 border border-purple-300/60 hover:bg-white/90 hover:border-purple-400/70 transition-all font-semibold",
         secondary:
-          "bg-white/75 backdrop-blur-lg text-gray-800 border border-white/65 shadow-xl hover:bg-white/85 hover:border-white/75 transition-all font-semibold",
+          "bg-white/75 backdrop-blur-lg text-gray-800 border border-blue-300/60 hover:bg-white/85 hover:border-blue-400/70 transition-all font-semibold",
         ghost:
           "text-gray-700 hover:bg-white/50 backdrop-blur-lg hover:text-gray-800 transition-all font-medium",
         link: "text-indigo-600 underline-offset-4 hover:underline font-medium",
