@@ -21,6 +21,13 @@ function Avatar({
   )
 }
 
+function getValidAvatar(url?: string) {
+  if (!url || url === 'ffffff' || url === '#ffffff') {
+    return 'https://via.placeholder.com/64x64/6b7280/ffffff?text=User';
+  }
+  return url;
+}
+
 function AvatarImage({
   className,
   ...props
@@ -30,6 +37,8 @@ function AvatarImage({
       data-slot="avatar-image"
       className={cn("aspect-square size-full", className)}
       {...props}
+      src={getValidAvatar(typeof props.src === 'string' ? props.src : undefined)}
+      onError={e => { e.currentTarget.src = 'https://via.placeholder.com/64x64/6b7280/ffffff?text=User' }}
     />
   )
 }

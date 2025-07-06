@@ -43,6 +43,14 @@ interface VideoEditorProps {
   onClose: () => void
 }
 
+// Utility to ensure a valid thumbnail URL
+function getValidThumbnail(url?: string) {
+  if (!url || url === 'ffffff' || url === '#ffffff') {
+    return 'https://via.placeholder.com/120x68/6b7280/ffffff?text=No+Image';
+  }
+  return url;
+}
+
 export function VideoEditor({ video, onSave, onClose }: VideoEditorProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
@@ -54,15 +62,9 @@ export function VideoEditor({ video, onSave, onClose }: VideoEditorProps) {
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [isSearching, setIsSearching] = useState(false)
   const [showMediaSearch, setShowMediaSearch] = useState(false)
-  
+  const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0)
   const videoRef = useRef<HTMLVideoElement>(null)
   const timelineRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (videoRef.current) {
-      setDuration(videoRef.current.duration || 0)
-    }
-  }, [])
 
   // Load video segments from database
   useEffect(() => {
@@ -90,13 +92,28 @@ export function VideoEditor({ video, onSave, onClose }: VideoEditorProps) {
   }, [segments])
 
   const handlePlayPause = () => {
+    if (segments.length === 0) return
+    if (!videoRef.current) return
+    if (isPlaying) {
+      videoRef.current.pause()
+      setIsPlaying(false)
+    } else {
+      videoRef.current.play()
+      setIsPlaying(true)
+    }
+  }
+
+  const playSegment = (segmentIndex: number) => {
+    if (segmentIndex >= segments.length) {
+      setIsPlaying(false)
+      setCurrentSegmentIndex(0)
+      return
+    }
+    setCurrentSegmentIndex(segmentIndex)
     if (videoRef.current) {
-      if (isPlaying) {
-        videoRef.current.pause()
-      } else {
-        videoRef.current.play()
-      }
-      setIsPlaying(!isPlaying)
+      videoRef.current.src = segments[segmentIndex].url
+      videoRef.current.currentTime = 0
+      videoRef.current.play().catch(() => {})
     }
   }
 
@@ -107,11 +124,27 @@ export function VideoEditor({ video, onSave, onClose }: VideoEditorProps) {
   }
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const time = parseFloat(e.target.value)
-    if (videoRef.current) {
-      videoRef.current.currentTime = time
-      setCurrentTime(time)
+    const seekTime = parseFloat(e.target.value)
+    let accumulatedTime = 0
+    let targetSegmentIndex = 0
+    for (let i = 0; i < segments.length; i++) {
+      const segmentDuration = segments[i].duration
+      if (seekTime >= accumulatedTime && seekTime < accumulatedTime + segmentDuration) {
+        targetSegmentIndex = i
+        break
+      }
+      accumulatedTime += segmentDuration
     }
+    const segmentStartTime = segments.slice(0, targetSegmentIndex).reduce((sum, seg) => sum + seg.duration, 0)
+    const segmentTime = seekTime - segmentStartTime
+    setCurrentSegmentIndex(targetSegmentIndex)
+    if (videoRef.current) {
+      videoRef.current.src = segments[targetSegmentIndex].url
+      videoRef.current.currentTime = segmentTime
+      videoRef.current.play().catch(() => {})
+      setIsPlaying(true)
+    }
+    setCurrentTime(seekTime)
   }
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,7 +179,9 @@ export function VideoEditor({ video, onSave, onClose }: VideoEditorProps) {
   }
 
   const getProgressPercentage = () => {
-    return duration > 0 ? (currentTime / duration) * 100 : 0
+    const totalDuration = segments.reduce((sum, seg) => sum + seg.duration, 0)
+    const totalCurrentTime = currentTime + segments.slice(0, currentSegmentIndex).reduce((sum, seg) => sum + seg.duration, 0)
+    return totalDuration > 0 ? (totalCurrentTime / totalDuration) * 100 : 0
   }
 
   const searchMedia = async () => {
@@ -292,81 +327,114 @@ export function VideoEditor({ video, onSave, onClose }: VideoEditorProps) {
         <div className="flex-1 flex flex-col">
           {/* Video Preview */}
           <div className="flex-1 bg-black p-6">
-            <div className="relative h-full max-w-4xl mx-auto">
-              <video
-                ref={videoRef}
-                className="w-full h-full object-contain"
-                onTimeUpdate={handleTimeUpdate}
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                onEnded={() => setIsPlaying(false)}
-              >
-                <source src={video.processedUrl || video.originalUrl} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-
-              {/* Video Controls Overlay */}
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                <div className="mb-2">
-                  <input
-                    type="range"
-                    min="0"
-                    max={duration || 0}
-                    value={currentTime}
-                    onChange={handleSeek}
-                    className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
-                    style={{
-                      background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${getProgressPercentage()}%, #4b5563 ${getProgressPercentage()}%, #4b5563 100%)`
-                    }}
-                  />
+            {/* Debug output for segment loading */}
+            <div className="text-xs text-white mb-2">
+              Segments loaded: {segments.length} <br />
+              First segment URL: {segments[0]?.url || 'none'}
+            </div>
+            <div className="relative h-96 max-w-4xl mx-auto">
+              {segments.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-white">
+                  <div className="text-center">
+                    <Film className="h-16 w-16 mx-auto mb-4 text-gray-400" />
+                    <p className="text-lg">No video segments available</p>
+                    <p className="text-sm text-gray-400">Add segments to the timeline to start editing</p>
+                  </div>
                 </div>
+              ) : (
+                <>
+                  {/* Current Segment Video */}
+                  <video
+                    ref={videoRef}
+                    className="w-full h-96 object-contain bg-black"
+                    onTimeUpdate={handleTimeUpdate}
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                    onEnded={() => playSegment(currentSegmentIndex + 1)}
+                    src={segments[currentSegmentIndex]?.url}
+                    controls
+                    onError={() => {
+                      toast.error('Failed to load video. Check CORS or video URL.');
+                    }}
+                  >
+                    <source src={segments[currentSegmentIndex]?.url} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handlePlayPause}
-                      className="text-white hover:bg-white/20"
-                    >
-                      {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                    </Button>
+                  {/* Segment Info Overlay */}
+                  <div className="absolute top-4 left-4 bg-black/70 text-white px-3 py-2 rounded-lg">
+                    <div className="text-sm font-medium">
+                      Segment {currentSegmentIndex + 1} of {segments.length}
+                    </div>
+                    <div className="text-xs text-gray-300">
+                      {segments[currentSegmentIndex]?.title}
+                    </div>
+                  </div>
 
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={toggleMute}
-                        className="text-white hover:bg-white/20"
-                      >
-                        {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                      </Button>
+                  {/* Video Controls Overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
+                    <div className="mb-2">
                       <input
                         type="range"
                         min="0"
-                        max="1"
-                        step="0.1"
-                        defaultValue="1"
-                        onChange={handleVolumeChange}
-                        className="w-16 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                        max={segments.reduce((sum, seg) => sum + seg.duration, 0)}
+                        value={currentTime + segments.slice(0, currentSegmentIndex).reduce((sum, seg) => sum + seg.duration, 0)}
+                        onChange={handleSeek}
+                        className="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer slider"
+                        style={{
+                          background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${getProgressPercentage()}%, #4b5563 ${getProgressPercentage()}%, #4b5563 100%)`
+                        }}
                       />
                     </div>
 
-                    <span className="text-white text-sm">
-                      {formatTime(currentTime)} / {formatTime(duration)}
-                    </span>
-                  </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handlePlayPause}
+                          className="text-white hover:bg-white/20"
+                        >
+                          {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                        </Button>
 
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={toggleFullscreen}
-                    className="text-white hover:bg-white/20"
-                  >
-                    <Maximize className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={toggleMute}
+                            className="text-white hover:bg-white/20"
+                          >
+                            {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                          </Button>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.1"
+                            defaultValue="1"
+                            onChange={handleVolumeChange}
+                            className="w-16 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer"
+                          />
+                        </div>
+
+                        <span className="text-white text-sm">
+                          {formatTime(currentTime + segments.slice(0, currentSegmentIndex).reduce((sum, seg) => sum + seg.duration, 0))} / {formatTime(segments.reduce((sum, seg) => sum + seg.duration, 0))}
+                        </span>
+                      </div>
+
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={toggleFullscreen}
+                        className="text-white hover:bg-white/20"
+                      >
+                        <Maximize className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -418,8 +486,8 @@ export function VideoEditor({ video, onSave, onClose }: VideoEditorProps) {
 
               <div 
                 ref={timelineRef}
-                className="flex gap-2 overflow-x-auto pb-4"
-                style={{ scrollbarWidth: 'thin' }}
+                className="flex gap-2 overflow-x-auto pb-4 scrollbar-thin min-w-[200%]"
+                style={{ scrollbarWidth: 'thin', maxWidth: '100%' }}
               >
                 {segments.length === 0 ? (
                   <div className="flex items-center justify-center w-full h-32 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
@@ -430,15 +498,23 @@ export function VideoEditor({ video, onSave, onClose }: VideoEditorProps) {
                     </div>
                   </div>
                 ) : (
-                  segments.map((segment) => (
+                  segments.map((segment, index) => (
                   <div
                     key={segment.id}
                     className={`flex-shrink-0 w-48 border-2 rounded-lg cursor-pointer transition-all ${
                       selectedSegment === segment.id 
                         ? 'border-blue-500 bg-blue-50' 
+                        : currentSegmentIndex === index
+                        ? 'border-green-500 bg-green-50'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
-                    onClick={() => setSelectedSegment(segment.id)}
+                    onClick={() => {
+                      setSelectedSegment(segment.id)
+                      setCurrentSegmentIndex(index)
+                      if (isPlaying) {
+                        playSegment(index)
+                      }
+                    }}
                   >
                     <div className="p-3">
                       <div className="flex items-center gap-2 mb-2">
@@ -449,9 +525,10 @@ export function VideoEditor({ video, onSave, onClose }: VideoEditorProps) {
                       </div>
                       
                       <img
-                        src={segment.thumbnail}
+                        src={getValidThumbnail(segment.thumbnail)}
                         alt={segment.title}
                         className="w-full h-16 object-cover rounded mb-2"
+                        onError={e => { e.currentTarget.src = 'https://via.placeholder.com/120x68/6b7280/ffffff?text=No+Image' }}
                       />
                       
                       <div className="text-xs text-gray-600 mb-2">
@@ -514,12 +591,10 @@ export function VideoEditor({ video, onSave, onClose }: VideoEditorProps) {
                           onClick={() => addMediaSegment(item)}
                         >
                           <img
-                            src={item.thumbnail}
+                            src={getValidThumbnail(item.thumbnail)}
                             alt={item.title}
                             className="w-full h-20 object-cover rounded mb-2"
-                            onError={(e) => {
-                              e.currentTarget.src = 'https://via.placeholder.com/120x68/6b7280/ffffff?text=No+Image'
-                            }}
+                            onError={e => { e.currentTarget.src = 'https://via.placeholder.com/120x68/6b7280/ffffff?text=No+Image' }}
                           />
                           <p className="text-xs font-medium truncate text-gray-800">{item.title}</p>
                           <p className="text-xs text-gray-500">{item.duration}s • {item.type}</p>
