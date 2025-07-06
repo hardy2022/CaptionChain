@@ -92,6 +92,7 @@ model Video {
   projectId   String?
   project     Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
   captions    Caption[]
+  segments    VideoSegment[]
   status      VideoStatus @default(UPLOADING)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -107,6 +108,24 @@ model Caption {
   video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model VideoSegment {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  url         String
+  thumbnail   String?
+  type        String   @default("video") // video, image, audio
+  startTime   Float
+  endTime     Float
+  duration    Float
+  keywords    String?  // JSON array of keywords
+  segmentId   String?  // Original segment ID from script analysis
+  videoId     String
+  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 enum VideoStatus {

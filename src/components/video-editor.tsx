@@ -64,6 +64,26 @@ export function VideoEditor({ video, onSave, onClose }: VideoEditorProps) {
     }
   }, [])
 
+  // Load video segments from database
+  useEffect(() => {
+    const loadVideoSegments = async () => {
+      try {
+        const response = await fetch(`/api/videos/${video.id}/segments`)
+        if (response.ok) {
+          const data = await response.json()
+          console.log('Loaded video segments:', data)
+          setSegments(data)
+        } else {
+          console.log('No segments found or error loading segments')
+        }
+      } catch (error) {
+        console.error('Error loading video segments:', error)
+      }
+    }
+
+    loadVideoSegments()
+  }, [video.id])
+
   // Debug: Log segments changes
   useEffect(() => {
     console.log('Segments updated:', segments)

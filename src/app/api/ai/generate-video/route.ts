@@ -116,11 +116,15 @@ async function startVideoGeneration(videoId: string, script: string) {
     const mediaClips = await searchMediaForSegments(segments)
     console.log(`Found ${mediaClips.length} media clips`)
     
-    // Step 3: Compose video with timing synchronization
+    // Step 3: Store media clips as video segments in database
+    await storeVideoSegments(videoId, segments, mediaClips)
+    console.log(`Stored ${mediaClips.length} video segments in database`)
+    
+    // Step 4: Compose video with timing synchronization
     const videoUrl = await composeVideo(segments, mediaClips)
     console.log(`Video composed successfully: ${videoUrl}`)
     
-    // Step 4: Update video record with final URL
+    // Step 5: Update video record with final URL
     await prisma.video.update({
       where: { id: videoId },
       data: {
@@ -201,6 +205,7 @@ interface MediaClip {
   duration: number
   keywords: string[]
   segmentId: string
+  thumbnail?: string
 }
 
 async function searchMediaForSegments(segments: ScriptSegment[]): Promise<MediaClip[]> {
@@ -222,7 +227,8 @@ async function searchMediaForSegments(segments: ScriptSegment[]): Promise<MediaC
           type: selectedMedia.type,
           duration: segment.duration,
           keywords: segment.keywords,
-          segmentId: segment.id
+          segmentId: segment.id,
+          thumbnail: selectedMedia.thumbnail
         })
       }
     } catch (error) {
@@ -362,6 +368,40 @@ async function composeVideo(segments: ScriptSegment[], mediaClips: MediaClip[]):
   
   // Fallback to sample video
   return 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4'
+}
+
+async function storeVideoSegments(videoId: string, segments: ScriptSegment[], mediaClips: MediaClip[]) {
+  console.log(`Storing video segments for video ${videoId}`)
+  
+  // Create video segments in database
+  const segmentData = mediaClips.map((clip, index) => {
+    const segment = segments.find(s => s.id === clip.segmentId)
+    const startTime = index === 0 ? 0 : mediaClips.slice(0, index).reduce((sum, c) => sum + c.duration, 0)
+    const endTime = startTime + clip.duration
+    
+    return {
+      title: segment?.text.substring(0, 50) || `Segment ${index + 1}`,
+      description: segment?.text || '',
+      url: clip.url,
+      thumbnail: clip.thumbnail || '',
+      type: clip.type,
+      startTime,
+      endTime,
+      duration: clip.duration,
+      keywords: JSON.stringify(clip.keywords),
+      segmentId: clip.segmentId,
+      videoId
+    }
+  })
+  
+  // Store segments in database
+  for (const segment of segmentData) {
+    await prisma.videoSegment.create({
+      data: segment
+    })
+  }
+  
+  console.log(`Stored ${segmentData.length} video segments`)
 }
 
 function calculateTotalDuration(segments: ScriptSegment[]): number {
