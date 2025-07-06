@@ -15,9 +15,7 @@ export async function GET(request: NextRequest) {
 
     const videos = await prisma.video.findMany({
       where: {
-        project: {
-          userId: session.user.id
-        },
+        userId: session.user.id,
         ...(projectId && { projectId })
       },
       include: {

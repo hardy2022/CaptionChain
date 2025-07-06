@@ -119,25 +119,40 @@ export async function DELETE(
     }
 
     const videoId = params.id
+    console.log('Attempting to delete video:', videoId, 'for user:', session.user.id)
 
-    const video = await prisma.video.deleteMany({
+    // Check if the video exists and belongs to the user
+    const video = await prisma.video.findFirst({
       where: {
         id: videoId,
-        project: {
-          userId: session.user.id
-        }
+        userId: session.user.id
+      },
+      include: {
+        project: true
       }
     })
 
-    if (video.count === 0) {
+    if (!video) {
+      console.log('Video not found or does not belong to user')
       return NextResponse.json({ error: 'Video not found' }, { status: 404 })
     }
 
-    return NextResponse.json({ success: true })
+    console.log('Found video:', video.title, 'belonging to project:', video.project?.name || 'No project')
+
+    // Delete the video (captions will be deleted automatically due to cascade)
+    const deletedVideo = await prisma.video.delete({
+      where: {
+        id: videoId
+      }
+    })
+
+    console.log('Successfully deleted video:', deletedVideo.id)
+
+    return NextResponse.json({ success: true, deletedVideoId: deletedVideo.id })
   } catch (error) {
     console.error('Delete video error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }

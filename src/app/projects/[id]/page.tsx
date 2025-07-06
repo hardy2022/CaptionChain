@@ -12,6 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Sparkles, Image, Video, Music, FileText, Search, Download, Play } from "lucide-react"
 import { useAppStore } from "@/lib/store"
+import { ScriptToVideoGenerator } from "@/components/script-to-video-generator"
+import { toast } from "sonner"
 
 interface Project {
   id: string
@@ -158,6 +160,11 @@ export default function ProjectPage() {
     }
   }
 
+  const handleVideoGenerated = (videoId: string) => {
+    // Refresh the project data to show the new video
+    window.location.reload()
+  }
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -238,12 +245,20 @@ export default function ProjectPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          <Tabs defaultValue="script" className="space-y-6">
+          <Tabs defaultValue="video-generation" className="space-y-6">
             <TabsList>
-              <TabsTrigger value="script">Script & Generation</TabsTrigger>
+              <TabsTrigger value="video-generation">Script to Video</TabsTrigger>
+              <TabsTrigger value="script">Script Editor</TabsTrigger>
               <TabsTrigger value="media">Media Library</TabsTrigger>
               <TabsTrigger value="content">Generated Content</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="video-generation" className="space-y-6">
+              <ScriptToVideoGenerator 
+                projectId={projectId} 
+                onVideoGenerated={handleVideoGenerated}
+              />
+            </TabsContent>
 
             <TabsContent value="script" className="space-y-6">
               {/* Script Editor */}

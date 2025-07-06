@@ -38,6 +38,11 @@ export async function POST(request: NextRequest) {
         originalUrl: '', // Will be populated after generation
         processedUrl: '',
         status: 'PROCESSING',
+        user: {
+          connect: {
+            id: session.user.id
+          }
+        },
         project: {
           connect: {
             id: projectId

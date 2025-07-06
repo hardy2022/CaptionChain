@@ -54,6 +54,11 @@ export async function POST(request: NextRequest) {
         size: videoFile.size,
         format: fileExtension || 'unknown',
         status: 'UPLOADING',
+        user: {
+          connect: {
+            id: session.user.id
+          }
+        },
         project: {
           connect: {
             id: projectId

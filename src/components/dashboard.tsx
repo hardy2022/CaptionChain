@@ -99,15 +99,21 @@ export function Dashboard() {
   const handleDeleteVideo = async (videoId: string) => {
     setIsDeletingVideo(videoId)
     try {
+      console.log('Attempting to delete video:', videoId)
       const response = await fetch(`/api/videos/${videoId}`, {
         method: 'DELETE',
       })
+
+      console.log('Delete response status:', response.status)
+      const responseData = await response.json()
+      console.log('Delete response data:', responseData)
 
       if (response.ok) {
         setVideos(videos.filter(v => v.id !== videoId))
         toast.success('Video deleted successfully')
       } else {
-        toast.error('Failed to delete video')
+        console.error('Delete failed:', responseData)
+        toast.error(responseData.error || 'Failed to delete video')
       }
     } catch (error) {
       console.error('Error deleting video:', error)
@@ -133,8 +139,8 @@ export function Dashboard() {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-600 rounded-lg">
-                  <Video className="h-6 w-6 text-white" />
+                <div className="p-2 bg-white/60 backdrop-blur-lg border border-purple-300/60 rounded-lg shadow-sm">
+                  <Video className="h-6 w-6 text-purple-700" />
                 </div>
                 <span className="text-xl font-bold text-gray-900 dark:text-white">
                   CaptionChain
