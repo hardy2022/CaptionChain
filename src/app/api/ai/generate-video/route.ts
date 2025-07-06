@@ -246,10 +246,12 @@ async function searchMediaAPI(query: string): Promise<any[]> {
 
 async function composeVideo(segments: ScriptSegment[], mediaClips: MediaClip[]): Promise<string> {
   // This would integrate with FFmpeg or similar video processing library
-  // For now, return a mock URL
+  // For now, return a demo video URL for testing
   
   const videoId = `generated_${Date.now()}`
-  const videoUrl = `/generated/${videoId}.mp4`
+  
+  // Use a sample video for demonstration
+  const videoUrl = 'https://sample-videos.com/zip/10/mp4/SampleVideo_1280x720_1mb.mp4'
   
   // In production, this would:
   // 1. Download media clips

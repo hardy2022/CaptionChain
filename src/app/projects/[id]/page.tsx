@@ -10,9 +10,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ArrowLeft, Sparkles, Image, Video, Music, FileText, Search, Download, Play } from "lucide-react"
+import { ArrowLeft, Sparkles, Image, Video, Music, FileText, Search, Download, Play, Scissors } from "lucide-react"
 import { useAppStore } from "@/lib/store"
 import { ScriptToVideoGenerator } from "@/components/script-to-video-generator"
+import { VideoPlayer } from "@/components/video-player"
+import { VideoEditor } from "@/components/video-editor"
 import { toast } from "sonner"
 
 interface Project {
@@ -30,6 +32,8 @@ interface Video {
   id: string
   title: string
   description?: string
+  originalUrl: string
+  processedUrl?: string
   status: string
   duration?: number
   size?: number
@@ -65,6 +69,8 @@ export default function ProjectPage() {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
 
   const projectId = params.id as string
 
@@ -163,6 +169,14 @@ export default function ProjectPage() {
   const handleVideoGenerated = (videoId: string) => {
     // Refresh the project data to show the new video
     window.location.reload()
+  }
+
+  const handleSaveVideoEdit = (segments: any[]) => {
+    // Here you would save the edited segments to the backend
+    console.log('Saving video segments:', segments)
+    toast.success('Video timeline saved successfully!')
+    setIsEditing(false)
+    setSelectedVideo(null)
   }
 
   if (isLoading) {
@@ -444,17 +458,46 @@ export default function ProjectPage() {
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {project.videos.map((video) => (
-                        <Card key={video.id} className="cursor-pointer hover:shadow-lg transition-shadow">
-                          <CardHeader>
-                            <CardTitle className="text-base">{video.title}</CardTitle>
-                            <CardDescription>{video.description}</CardDescription>
-                          </CardHeader>
+                        <Card 
+                          key={video.id} 
+                          className="hover:shadow-lg transition-shadow"
+                        >
+                                                      <CardHeader>
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Play className="h-4 w-4 text-blue-500" />
+                                  <CardTitle className="text-base">{video.title}</CardTitle>
+                                </div>
+                                <div className="flex gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSelectedVideo(video)}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Play className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSelectedVideo(video)
+                                      setIsEditing(true)
+                                    }}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Scissors className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                              <CardDescription>{video.description}</CardDescription>
+                            </CardHeader>
                           <CardContent>
                             <div className="flex items-center justify-between">
                               <Badge 
                                 variant={
                                   video.status === 'READY' ? 'default' : 
-                                  video.status === 'TRANSCRIBING' ? 'secondary' :
+                                  video.status === 'PROCESSING' ? 'secondary' :
                                   video.status === 'ERROR' ? 'destructive' : 'secondary'
                                 }
                               >
@@ -475,6 +518,32 @@ export default function ProjectPage() {
           </Tabs>
         </div>
       </main>
+
+      {/* Video Player Modal */}
+      {selectedVideo && !isEditing && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-6xl">
+            <VideoPlayer 
+              video={selectedVideo} 
+              onClose={() => setSelectedVideo(null)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Video Editor Modal */}
+      {selectedVideo && isEditing && (
+        <div className="fixed inset-0 z-50">
+          <VideoEditor
+            video={selectedVideo}
+            onSave={handleSaveVideoEdit}
+            onClose={() => {
+              setIsEditing(false)
+              setSelectedVideo(null)
+            }}
+          />
+        </div>
+      )}
     </div>
   )
 } 
