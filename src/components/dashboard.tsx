@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Video, Plus, Upload, Settings, LogOut, User, FolderOpen, Clock, FileVideo, Sparkles } from "lucide-react"
+import { Video, Plus, Upload, Settings, LogOut, User, FolderOpen, Clock, FileVideo, Sparkles, Zap } from "lucide-react"
 import { useAppStore } from "@/lib/store"
 import { VideoUpload } from "@/components/video-upload"
 import { ProjectForm } from "@/components/project-form"
@@ -190,63 +190,76 @@ export function Dashboard() {
           </div>
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-purple-500" />
-                      Generate AI Content
-                    </CardTitle>
-                    <CardDescription>
-                      Create AI-generated content from your scripts
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button className="w-full">
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Start AI Generation
-                    </Button>
-                  </CardContent>
-                </Card>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create AI-Generated Project</DialogTitle>
-                </DialogHeader>
-                <ProjectForm />
-              </DialogContent>
-            </Dialog>
+          <Card className="mb-8 bg-white/20 backdrop-blur-2xl border-white/40 shadow-none">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-purple-500" />
+                Quick Actions
+              </CardTitle>
+              <CardDescription>
+                Get started with AI content generation or upload existing videos
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Sparkles className="h-5 w-5 text-purple-500" />
+                          Generate AI Content
+                        </CardTitle>
+                        <CardDescription>
+                          Create AI-generated content from your scripts
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button className="w-full">
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Start AI Generation
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create AI-Generated Project</DialogTitle>
+                    </DialogHeader>
+                    <ProjectForm />
+                  </DialogContent>
+                </Dialog>
 
-            <Dialog>
-              <DialogTrigger asChild>
-                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Upload className="h-5 w-5" />
-                      Upload Existing Video
-                    </CardTitle>
-                    <CardDescription>
-                      Upload and process existing video content
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Button variant="outline" className="w-full">
-                      <Upload className="mr-2 h-4 w-4" />
-                      Upload Video
-                    </Button>
-                  </CardContent>
-                </Card>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Upload Video</DialogTitle>
-                </DialogHeader>
-                <VideoUpload />
-              </DialogContent>
-            </Dialog>
-          </div>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Upload className="h-5 w-5" />
+                          Upload Existing Video
+                        </CardTitle>
+                        <CardDescription>
+                          Upload and process existing video content
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <Button variant="outline" className="w-full">
+                          <Upload className="mr-2 h-4 w-4" />
+                          Upload Video
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>Upload Video</DialogTitle>
+                    </DialogHeader>
+                    <VideoUpload />
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Recent Projects */}
           <div className="mb-8">
