@@ -15,6 +15,7 @@ import { useAppStore } from "@/lib/store"
 import { ScriptToVideoGenerator } from "@/components/script-to-video-generator"
 import { VideoPlayer } from "@/components/video-player"
 import { VideoEditor } from "@/components/video-editor"
+import { Sidebar } from "@/components/sidebar"
 import { toast } from "sonner"
 
 interface Project {
@@ -204,11 +205,14 @@ export default function ProjectPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <div className="bg-white/10 backdrop-blur-md border-b border-white/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+    <div className="min-h-screen flex">
+      <Sidebar />
+      
+      {/* Main Content */}
+      <main className="flex-1 ml-16 lg:ml-64 transition-all duration-300 ease-in-out">
+        {/* Header */}
+        <div className="bg-white/10 backdrop-blur-md border-b border-white/20 px-6 py-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button
                 variant="ghost"
@@ -254,11 +258,9 @@ export default function ProjectPage() {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
+        {/* Content Area */}
+        <div className="p-6">
           <Tabs defaultValue="video-generation" className="space-y-6">
             <TabsList>
               <TabsTrigger value="video-generation">Script to Video</TabsTrigger>

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Play, FileVideo, Clock, Calendar, Languages } from "lucide-react"
 import { CaptionEditor } from "@/components/caption-editor"
+import { Sidebar } from "@/components/sidebar"
 import { useAppStore } from "@/lib/store"
 
 interface Video {
@@ -128,11 +129,14 @@ export default function VideoPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <div className="bg-white/10 backdrop-blur-md border-b border-white/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+    <div className="min-h-screen flex">
+      <Sidebar />
+      
+      {/* Main Content */}
+      <main className="flex-1 ml-16 lg:ml-64 transition-all duration-300 ease-in-out">
+        {/* Header */}
+        <div className="bg-white/10 backdrop-blur-md border-b border-white/20 px-6 py-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button
                 variant="ghost"
@@ -161,11 +165,9 @@ export default function VideoPage() {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
+        {/* Content Area */}
+        <div className="p-6">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Video Info */}
             <div className="lg:col-span-1">

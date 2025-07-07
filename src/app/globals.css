@@ -168,3 +168,27 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
+
+/* Sidebar specific styles */
+.sidebar-collapsed {
+  width: 4rem;
+}
+
+.sidebar-expanded {
+  width: 16rem;
+}
+
+/* Ensure sidebar is above other content */
+.sidebar {
+  z-index: 50;
+}
+
+/* Smooth transitions for sidebar */
+.sidebar-transition {
+  transition: width 0.3s ease-in-out;
+}
+
+/* Main content adjustments */
+.main-content {
+  transition: margin-left 0.3s ease-in-out;
+}
