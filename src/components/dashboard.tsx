@@ -14,6 +14,7 @@ import { useAppStore } from "@/lib/store"
 import { VideoUpload } from "@/components/video-upload"
 import { ProjectForm } from "@/components/project-form"
 import { Sidebar } from "@/components/sidebar"
+import { ContentTypeSelector } from "@/components/content-type-selector"
 import { toast } from "sonner"
 
 interface Project {
@@ -171,6 +172,14 @@ export function Dashboard() {
 
                 {/* Content Area */}
         <div className="p-6">
+          {/* Content Type Selector Section */}
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="h-6 w-6 text-purple-400" />
+            <h2 className="text-lg font-bold text-gray-900" style={{fontFamily: 'var(--font-jakarta-sans, var(--font-sans))'}}>Select Content Type</h2>
+          </div>
+          <div className="mb-10">
+            <ContentTypeSelector />
+          </div>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
