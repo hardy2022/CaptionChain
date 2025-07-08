@@ -37,7 +37,7 @@ export class WhisperService {
 
       // Call Whisper API for transcription
       const transcription = await openai.audio.transcriptions.create({
-        file: audioUrl as any, // This will be a file stream in production
+        file: audioUrl as unknown as File, // This will be a file stream in production
         model: 'whisper-1',
         language: language || undefined,
         response_format: 'verbose_json',

@@ -454,7 +454,7 @@ export default function ProjectPage() {
                         No content generated yet
                       </h3>
                       <p className="text-gray-600 dark:text-gray-400 mb-4">
-                        Write a script and click "Generate AI Content" to create your first piece
+                        Write a script and click &quot;Generate AI Content&quot; to create your first piece
                       </p>
                     </div>
                   ) : (

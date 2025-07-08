@@ -385,7 +385,7 @@ export function Dashboard() {
                           </div>
                           {project.script && (
                             <p className="text-xs text-gray-600 line-clamp-2">
-                              "{project.script.substring(0, 100)}..."
+                              &quot;{project.script.substring(0, 100)}...&quot;
                             </p>
                           )}
                         </div>

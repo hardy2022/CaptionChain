@@ -57,7 +57,7 @@ interface AppState {
 
 export const useAppStore = create<AppState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
       projects: [],
       currentProject: null,
